@@ -33,6 +33,7 @@ class BlurViewModel(application: Application) : ViewModel() {
 
     internal fun cancelWork() {
         workManager.cancelUniqueWork(IMAGE_MANIPULATION_WORK_NAME)
+        // Cancel the work by name
     }
 
     private fun createInputDataForUri(): Data {
@@ -52,6 +53,12 @@ class BlurViewModel(application: Application) : ViewModel() {
                 OneTimeWorkRequest.from(CleanupWorker::class.java)
             )
 
+        // Create charging constraint  Create and add charging constraint
+        val constraints = Constraints.Builder()
+            .setRequiresCharging(true)
+            .build()
+
+
         for (i in 0 until blurLevel) {
             val blurBuilder = OneTimeWorkRequestBuilder<BlurWorker>()
 
@@ -62,10 +69,6 @@ class BlurViewModel(application: Application) : ViewModel() {
             continuation = continuation.then(blurBuilder.build())
         }
 
-        // Create charging constraint
-        val constraints = Constraints.Builder()
-            .setRequiresCharging(true)
-            .build()
 
         val save = OneTimeWorkRequestBuilder<SaveImageToFileWorker>()
             .setConstraints(constraints)
