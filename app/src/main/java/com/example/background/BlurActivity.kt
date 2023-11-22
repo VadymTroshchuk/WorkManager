@@ -1,28 +1,38 @@
 package com.example.background
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import com.example.background.databinding.ActivityBlurBinding
 import androidx.lifecycle.Observer
 import androidx.work.WorkInfo
+import com.example.background.databinding.ActivityBlurBinding
 
 class BlurActivity : AppCompatActivity() {
 
-    private val viewModel: BlurViewModel by viewModels {
-        BlurViewModel.BlurViewModelFactory(
-            application
-        )
-    }
+    private val viewModel: BlurViewModel by viewModels { BlurViewModelFactory(application) }
     private lateinit var binding: ActivityBlurBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityBlurBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        viewModel.outputWorkInfos.observe(this, workInfosObserver())
+
         binding.goButton.setOnClickListener { viewModel.applyBlur(blurLevel) }
+
+        binding.seeFileButton.setOnClickListener {
+            viewModel.outputUri?.let { currentUri ->
+                val actionView = Intent(Intent.ACTION_VIEW, currentUri)
+                actionView.resolveActivity(packageManager)?.run {
+                    startActivity(actionView)
+                }
+            }
+        }
+
+        binding.cancelButton.setOnClickListener { viewModel.cancelWork() }
+
+        viewModel.outputWorkInfos.observe(this, workInfosObserver())
     }
 
     private fun workInfosObserver(): Observer<List<WorkInfo>> {
@@ -32,21 +42,22 @@ class BlurActivity : AppCompatActivity() {
                 return@Observer
             }
 
-
             val workInfo = listOfWorkInfo[0]
 
             if (workInfo.state.isFinished) {
                 showWorkFinished()
+
+                val outputImageUri = workInfo.outputData.getString(KEY_IMAGE_URI)
+
+                if (!outputImageUri.isNullOrEmpty()) {
+                    viewModel.setOutputUri(outputImageUri)
+                    binding.seeFileButton.visibility = View.VISIBLE
+                }
             } else {
                 showWorkInProgress()
             }
         }
     }
-
-
-    /**
-     * Shows and hides views for when the Activity is processing an image
-     */
     private fun showWorkInProgress() {
         with(binding) {
             progressBar.visibility = View.VISIBLE
@@ -56,9 +67,6 @@ class BlurActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Shows and hides views for when the Activity is done processing an image
-     */
     private fun showWorkFinished() {
         with(binding) {
             progressBar.visibility = View.GONE
@@ -66,7 +74,6 @@ class BlurActivity : AppCompatActivity() {
             goButton.visibility = View.VISIBLE
         }
     }
-
     private val blurLevel: Int
         get() =
             when (binding.radioBlurGroup.checkedRadioButtonId) {
