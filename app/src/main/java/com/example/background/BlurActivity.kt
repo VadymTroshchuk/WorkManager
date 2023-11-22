@@ -21,6 +21,9 @@ class BlurActivity : AppCompatActivity() {
 
         binding.goButton.setOnClickListener { viewModel.applyBlur(blurLevel) }
 
+        // Hookup the Cancel button
+        binding.cancelButton.setOnClickListener { viewModel.cancelWork() }
+
         binding.seeFileButton.setOnClickListener {
             viewModel.outputUri?.let { currentUri ->
                 val actionView = Intent(Intent.ACTION_VIEW, currentUri)
@@ -29,8 +32,6 @@ class BlurActivity : AppCompatActivity() {
                 }
             }
         }
-
-        binding.cancelButton.setOnClickListener { viewModel.cancelWork() }
 
         viewModel.outputWorkInfos.observe(this, workInfosObserver())
     }
